@@ -7,12 +7,14 @@ CFLAGS = -lm -Wall
 
 # Parser generator
 BISON = bison
+
 # Lexical analyser generator
 FLEX = flex
 
+# Nome do executável
 TARGET = fox
 
-$(TARGET): fox-lang.l fox-lang.y fox-lang.h
-	$(BISON) -d fox-lang.y
-	$(FLEX) -o fox-lang.lex.c fox-lang.l
-	$(CC) -o $@ fox-lang.tab.c fox-lang.lex.c fox-lang.c $(CFLAGS)
+$(TARGET): scanner.l parser.y parser.h
+	$(BISON) -d parser.y
+	$(FLEX) -o scanner.lex.c scanner.l
+	$(CC) -o $@ parser.tab.c scanner.lex.c parser.c $(CFLAGS)
