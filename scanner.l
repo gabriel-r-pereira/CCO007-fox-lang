@@ -20,7 +20,7 @@ EXP ([Ee][-+]?[0-9]+)
 "(" |
 ")" |
 "{" |
-"}"    { return yytext[0]; } /* retorna o char */
+"}"    { return yytext[0]; } // retorna o char
 
  /* Operações de comparação, todos usam o token CMP */
 ">"     { yylval.fn = 1; return CMP; }
@@ -32,8 +32,8 @@ EXP ([Ee][-+]?[0-9]+)
 
  /* Palavras reservadas */
 "if"    { return IF; }
-"else"    { return ELSE; }
-"then"    { return THEN; }
+"else"  { return ELSE; }
+"then"  { return THEN; }
 "while" { return WHILE; }
 "do"    { return DO; }
 "def"   { return DEF; }
@@ -57,11 +57,13 @@ EXP ([Ee][-+]?[0-9]+)
 }
 
 "//".*  // ignora comentários da forma "//"
-[ \t]   /* ignora espaços em branco */
-\n      { return EOL; }/* ignora fim de linha */
+[ \t]   // ignora espaços em branco
+\n      { return EOL; } // ignora fim de linha */
 
-\\\n    { printf ("c> "); } /* permite a continuação da declaração na linha seguinte */
-.       { yyerror("Mystery character %c\n", *yytext); }
-<<EOF>> { exit(0); }
+\\\n    { printf ("c> "); } // permite a continuação da declaração na linha seguinte */
+
+.       { yyerror("Mystery character %c\n", *yytext); } // caracter não reconhecido
+
+<<EOF>> { exit(0); }    // End-Of-File, final do arquivo
 
 %%

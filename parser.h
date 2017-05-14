@@ -4,16 +4,16 @@
 
 /* Interface para o lexer */
 extern int yylineno;        // armazena o número da linha
-extern int yylex();
-extern int yyparse();
-extern FILE *yyin;
-extern FILE *yyout;
-void yyerror(char *s, ...);
+extern int yylex();         // executa o scanner
+extern int yyparse();       // executa o parser
+extern FILE *yyin;          // entrada (padrão - stdin)
+extern FILE *yyout;         // saída (padrão - stdout)
+void yyerror(char *s, ...); // método padrão de notificação de erros
 
 /* Estrutura usada para representar um símbolo, na tabela de símbolos */
 struct symbol {
-    char *name;             // nome da variável
-    double value;           // valor da variável
+    char *name;             // nome do símbolo
+    double value;           // valor numérico do símbolo (se variável)
     struct ast *func;       // AST que representa as declarações de uma função
     struct symlist *syms;   // lista de argumentos da função
 };
@@ -22,7 +22,10 @@ struct symbol {
 /* Tabela de símbolos */
 struct symbol symtab[NHASH];
 
-/* Função para busca na tabela de símbolos */
+/* Busca na tabela de símbolos.
+ * Se o nome buscado existe, o símbolo é retornado. Se não,
+ * e existe espaço livre na tabela, o novo símbolo é inserido.
+ */
 struct symbol *lookup(char*);
 
 /* Lista de símbolos, usado na passagem de argumentos */
@@ -39,12 +42,11 @@ void symlistfree(struct symlist *sl);
 
 /*
  * Opções para nodetype
- * + - * / |
+ * + - * /
  * 0-7  operações de comparação
  * M    menos unário
  * L    expressão ou lista de declarações (statements)
  * I    IF
- * W    WHILE
  * N    símbolo
  * =    atribuição
  * S    lista de símbolos
@@ -60,9 +62,11 @@ enum bifs {
     B_print,
 };
 
-/* Nós da Abstract Syntax Tree (AST) */
-/* Cada tipo de nó possui um nodetype padrão */
-/* Nó usado para expressões e comparação */
+/* Nós da Abstract Syntax Tree (AST)
+ * Cada tipo de nó possui um nodetype (int), e um valor padrão. Isso permite
+ * saber o tipo do nó durante a avaliação da árvore. 
+ */
+ /* Nó usado para expressões e comparação */
 struct ast {
     int nodetype;       // tipo L ou 0-7
     struct ast *l;      // nó da esquerda
@@ -73,7 +77,7 @@ struct ast {
 struct fncall {
     int nodetype;       // tipo F
     struct ast *l;      // expressão passada como parâmetro
-    enum bifs functype;
+    enum bifs functype; // número da função
 };
 
 /* Nó de função do usuário */
@@ -105,7 +109,7 @@ struct symref {
 
 /* Nó de atribuição */
 struct symasgn {
-    int nodetype;       // tipo =
+    int nodetype;       // tipo '='
     struct symbol *s;   // símbolo
     struct ast *v;      // valor
 };
