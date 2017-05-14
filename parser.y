@@ -45,9 +45,9 @@
 /* Declarações */
 stmt: if_stmt
     | while_stmt
-    | assigment
-    | u_function
-    | b_function
+    | assigment ';'
+    | u_function ';'
+    | b_function ';'
     ;
 
 /* if/else */
@@ -65,6 +65,7 @@ if_stmt: IF exp stmt %prec NO_ELSE {    // if, única declaração
     }
     ;
 
+/* while */
 while_stmt: WHILE exp stmt {                // while, única declaração
         $$ = newflow('W', $2, $3, NULL);
     }
@@ -84,13 +85,13 @@ stmt_list: /* vazio */  { $$ = NULL; }
     ;
 
 /* Atribuição de variáveis */
-assigment: ID '=' exp ';'               { $$ = newasgn($1, $3); }
+assigment: ID '=' exp                   { $$ = newasgn($1, $3); }
     ;
 /* Chamada de funções definidas pelo usuário */
-u_function: FUNC '(' explist ')' ';'    { $$ = newfunc($1, $3); }
+u_function: FUNC '(' explist ')'        { $$ = newfunc($1, $3); }
     ;
 /* Chamada de funções da linguagem */
-b_function: ID '(' explist ')' ';'      { $$ = newcall($1, $3); }
+b_function: ID '(' explist ')'          { $$ = newcall($1, $3); }
     ;
 
 /* Expressão */
