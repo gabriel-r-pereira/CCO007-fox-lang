@@ -33,9 +33,7 @@ EXP ([Ee][-+]?[0-9]+)
  /* Palavras reservadas */
 "if"    { return IF; }
 "else"  { return ELSE; }
-"then"  { return THEN; }
 "while" { return WHILE; }
-"do"    { return DO; }
 "def"   { return DEF; }
 
  /* Funções da linguagem */

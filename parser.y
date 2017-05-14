@@ -17,6 +17,7 @@
 %token <s> ID       // identificador
 %token <fn> FUNC    // função da linguagem
 %token IF ELSE      // if/else
+%token WHILE        // while
 %token DEF          // palavra reservada para definição de funções
 %token EOL          // End-Of-File
 
@@ -29,8 +30,11 @@
 %nonassoc NO_ELSE
 %nonassoc ELSE
 
-/* Tipos de cada símbolo não-terminal */
-%type <a> exp stmt if_stmt stmt_list explist assigment u_function b_function
+/* Tipo de cada símbolo não-terminal */
+%type <a> stmt stmt_list
+%type <a> exp explist
+%type <a> if_stmt while_stmt
+%type <a> assigment u_function b_function
 %type <sl> symlist
 
 /* Símbolo inicial */
@@ -40,6 +44,7 @@
 
 /* Declarações */
 stmt: if_stmt
+    | while_stmt
     | assigment
     | u_function
     | b_function
@@ -57,6 +62,14 @@ if_stmt: IF exp stmt %prec NO_ELSE {    // if, única declaração
     }
     | IF exp '{' stmt_list '}' ELSE '{' stmt_list '}' { // if/else, múltiplas declarações
         $$ = newflow('I', $2, $4, $8);
+    }
+    ;
+
+while_stmt: WHILE exp stmt {                // while, única declaração
+        $$ = newflow('W', $2, $3, NULL);
+    }
+    | WHILE exp '{' stmt_list '}' {         // while, múltiplas declarações
+        $$ = newflow('W', $2, $4, NULL);
     }
     ;
 

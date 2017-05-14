@@ -47,6 +47,7 @@ void symlistfree(struct symlist *sl);
  * M    menos unário
  * L    expressão ou lista de declarações (statements)
  * I    IF
+ * W    WHILE
  * N    símbolo
  * =    atribuição
  * S    lista de símbolos
@@ -64,7 +65,7 @@ enum bifs {
 
 /* Nós da Abstract Syntax Tree (AST)
  * Cada tipo de nó possui um nodetype (int), e um valor padrão. Isso permite
- * saber o tipo do nó durante a avaliação da árvore. 
+ * saber o tipo do nó durante a avaliação da árvore.
  */
  /* Nó usado para expressões e comparação */
 struct ast {
