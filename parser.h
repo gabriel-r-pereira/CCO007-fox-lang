@@ -4,6 +4,8 @@
 
 /* Interface para o lexer */
 extern int yylineno;        // armazena o número da linha
+extern int yylex();
+extern int yyparse();
 extern FILE *yyin;
 extern FILE *yyout;
 void yyerror(char *s, ...);

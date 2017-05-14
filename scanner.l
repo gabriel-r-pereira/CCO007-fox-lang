@@ -14,12 +14,13 @@ EXP ([Ee][-+]?[0-9]+)
 "-" |
 "*" |
 "/" |
-"|" |
 "=" |
 "," |
 ";" |
 "(" |
-")"     { return yytext[0]; } /* retorna o char */
+")" |
+"{" |
+"}"    { return yytext[0]; } /* retorna o char */
 
  /* Operações de comparação, todos usam o token CMP */
 ">"     { yylval.fn = 1; return CMP; }
@@ -31,11 +32,11 @@ EXP ([Ee][-+]?[0-9]+)
 
  /* Palavras reservadas */
 "if"    { return IF; }
-"then"  { return THEN; }
-"else"  { return ELSE; }
+"else"    { return ELSE; }
+"then"    { return THEN; }
 "while" { return WHILE; }
 "do"    { return DO; }
-"let"   { return LET; }
+"def"   { return DEF; }
 
  /* Funções da linguagem */
  "sqrt"     { yylval.fn = B_sqrt; return FUNC; }
@@ -57,9 +58,10 @@ EXP ([Ee][-+]?[0-9]+)
 
 "//".*  // ignora comentários da forma "//"
 [ \t]   /* ignora espaços em branco */
+\n      { return EOL; }/* ignora fim de linha */
 
 \\\n    { printf ("c> "); } /* permite a continuação da declaração na linha seguinte */
-\n      { return EOL; }
 .       { yyerror("Mystery character %c\n", *yytext); }
+<<EOF>> { exit(0); }
 
 %%
