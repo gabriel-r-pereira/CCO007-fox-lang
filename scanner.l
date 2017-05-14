@@ -56,9 +56,7 @@ EXP ([Ee][-+]?[0-9]+)
 
 "//".*  // ignora comentários da forma "//"
 [ \t]   // ignora espaços em branco
-\n      { return EOL; } // ignora fim de linha */
-
-\\\n    { printf ("c> "); } // permite a continuação da declaração na linha seguinte */
+\n      // ignora fim de linha */
 
 .       { yyerror("Mystery character %c\n", *yytext); } // caracter não reconhecido
 

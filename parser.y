@@ -19,7 +19,6 @@
 %token IF ELSE      // if/else
 %token WHILE        // while
 %token DEF          // palavra reservada para definição de funções
-%token EOL          // End-Of-File
 
 /* Precedência dos operadores */
 %nonassoc <fn> CMP  // comparadores
@@ -35,6 +34,7 @@
 %type <a> exp explist
 %type <a> if_stmt while_stmt
 %type <a> assigment u_function b_function
+%type <a> func_def code
 %type <sl> symlist
 
 /* Símbolo inicial */
@@ -119,18 +119,21 @@ symlist: ID                 { $$ = newsymlist($1, NULL); }
     | ID ',' symlist        { $$ = newsymlist($1, $3); }
     ;
 
+/* Código */
+code: func_def
+    | stmt {
+        eval($1);
+        treefree($1);
+    }
+    ;
+
+/* Definição de função */
+func_def: DEF ID '(' symlist ')' '{' stmt_list '}'  { dodef($2, $4, $7); }
+
 /* Linhas da entrada */
-lines: /* comentário ou espaço(s) em branco */
-    | lines EOL     // linhas vazias
-    | lines stmt {  // declaração
-        eval($2);
-        treefree($2);
-    }
-    | lines DEF ID '(' symlist ')' '{' stmt_list '}' EOL { // definição de função
-        dodef($3, $5, $8);
-        fprintf(yyout, "Defined %s\n", $3->name);
-    }
-    | lines error EOL { // erro no reconhecimento da linguagem
+lines: code         // única declaração
+    | lines code    // múltiplas declarações
+    | lines error { // erro no reconhecimento da linguagem
         yyerrok;
     }
     ;
