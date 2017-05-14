@@ -412,15 +412,18 @@ void yyerror(char *s, ...) {
 }
 
 int main (int argc, char **argv) {
-    if (argc > 1) {
-        if (argc == 2) {
-            if(!(yyin = fopen(argv[1], "r"))) {
-                perror(argv[1]);
-                return 1;
-            }
-            return yyparse();
+    if (argc >= 2) {
+        if(!(yyin = fopen(argv[1], "r"))) {
+            perror(argv[1]);
+            return 1;
         }
-    } else {
-        return yyparse();
     }
+    if (argc == 3) {
+        if (!(yyout = fopen(argv[2], "w"))) {
+            perror(argv[2]);
+            return 1;
+        }
+    }
+    
+    return yyparse();
 }
