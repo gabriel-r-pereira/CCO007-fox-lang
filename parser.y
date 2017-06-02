@@ -6,19 +6,25 @@
 
 %union {
     struct ast *a;
+    int i;
     double d;
+    char c;
+    char *id;
     struct symbol *s;
     struct symlist *sl;
     int fn;             // função
 }
 
 /* Declaração dos tokens */
-%token <d> NUMBER   // número
-%token <s> ID       // identificador
-%token <fn> FUNC    // função da linguagem
-%token IF ELSE      // if/else
-%token WHILE        // while
-%token DEF          // palavra reservada para definição de funções
+%token <i> INT_LITERAL      // número inteiro
+%token <d> FLOAT_LITERAL    // ponto flutuante
+%token <c> CHAR_LITERAL     // caractere
+%token <s> ID               // identificador
+%token <fn> FUNC            // função da linguagem
+%token INT FLOAT CHAR       // palavras reservadas para tipo
+%token IF ELSE              // if/else
+%token WHILE                // while
+%token DEF                  // palavra reservada para definição de funções
 
 /* Precedência dos operadores */
 %nonassoc <fn> CMP  // comparadores
@@ -102,7 +108,9 @@ exp: exp CMP exp            { $$ = newcmp($2, $1, $3); }
     | exp '/' exp           { $$ = newast('/', $1, $3); }
     | '(' exp ')'           { $$ = $2; }
     | '-' exp %prec UMINUS  { $$ = newast('M', $2, NULL); }
-    | NUMBER                { $$ = newnum($1); }
+    | INT_LITERAL           { $$ = newint($1); }
+    | FLOAT_LITERAL         { $$ = newfloat($1); }
+    | CHAR_LITERAL          { $$ = newchar($1); }
     | ID                    { $$ = newref($1); }
     | assigment
     | u_function

@@ -58,15 +58,39 @@ struct ast *newast(int nodetype, struct ast *l, struct ast *r) {
     return a;
 }
 
-struct ast *newnum(double d) {
-    struct numval *a = malloc(sizeof(struct numval));
+struct ast *newint(int i) {
+    struct intval *a = malloc(sizeof(struct intval));
 
     if(!a) {
         yyerror("out of space");
         exit(0);
     }
-    a->nodetype = 'K';
-    a->number = d;
+    a->nodetype = 'X';
+    a->number = i;
+    return (struct ast *)a;
+}
+
+struct ast *newfloat(double f) {
+    struct floatval *a = malloc(sizeof(struct floatval));
+
+    if(!a) {
+        yyerror("out of space");
+        exit(0);
+    }
+    a->nodetype = 'Y';
+    a->number = f;
+    return (struct ast *)a;
+}
+
+struct ast *newchar(char c) {
+    struct charval *a = malloc(sizeof(struct charval));
+
+    if(!a) {
+        yyerror("out of space");
+        exit(0);
+    }
+    a->nodetype = 'Z';
+    a->c = c;
     return (struct ast *)a;
 }
 
@@ -162,7 +186,7 @@ void treefree(struct ast *a) {
         case 'M': case 'C': case 'F':
             treefree(a->l);
         /* não possuem sub-árvores */
-        case 'K': case 'N':
+        case 'X': case 'Y': case 'Z': case 'N':
             break;
         case '=':
             free(((struct symasgn *)a)->v);
@@ -214,7 +238,19 @@ static double callbuiltin(struct fncall *f) {
         case B_log:
             return log(v);
         case B_print:
-            fprintf(yyout, "%4.4g\n", v);
+            switch (f->l->nodetype) {
+                case 'X':
+                    fprintf(yyout, "%d\n", ((struct intval *)f->l)->number);
+                    break;
+                case 'Y':
+                    fprintf(yyout, "%f\n", ((struct floatval *)f->l)->number);
+                    break;
+                case 'Z':
+                    fprintf(yyout, "%c\n", ((struct charval *)f->l)->c);
+                    break;
+                default:
+                    break;
+            }
             return v;
         default:
             yyerror("Unknown built-in function %d", functype);
@@ -297,9 +333,17 @@ double eval(struct ast *a) {
         return 0.0;
     }
     switch(a->nodetype) {
+        /* Número inteiro */
+        case 'X':
+            v = ((struct intval *)a)->number;
+            break;
+        /* ponto flutuante */
+        case 'Y':
+            v = ((struct floatval *)a)->number;
+            break;
         /* Constante */
-        case 'K':
-            v = ((struct numval *)a)->number;
+        case 'Z':
+            v = ((struct charval *)a)->c;
             break;
         /* Identificador */
         case 'N':
@@ -424,6 +468,6 @@ int main (int argc, char **argv) {
             return 1;
         }
     }
-    
+
     return yyparse();
 }

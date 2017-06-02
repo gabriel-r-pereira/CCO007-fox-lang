@@ -35,6 +35,9 @@ EXP ([Ee][-+]?[0-9]+)
 "else"  { return ELSE; }
 "while" { return WHILE; }
 "def"   { return DEF; }
+"int"   { return INT; }
+"float" { return FLOAT; }
+"char"  { return CHAR; }
 
  /* Funções da linguagem */
  "sqrt"     { yylval.fn = B_sqrt; return FUNC; }
@@ -49,10 +52,20 @@ EXP ([Ee][-+]?[0-9]+)
 }
 
  /* Números */
-[0-9]+"."[0-9]*{EXP}?|"."?[0-9]+{EXP}? {
-    yylval.d = atof(yytext);
-    return NUMBER;
+[0-9]+{EXP}? {
+    yylval.i = atoi(yytext);
+    return INT_LITERAL;
 }
+("."?[0-9]+{EXP}?)|([0-9]+"."[0-9]*{EXP}?) {
+    yylval.d = atof(yytext);
+    return FLOAT_LITERAL;
+}
+
+ /* Caractere */
+ '(.)?' {
+     yylval.c = yytext[1];
+     return CHAR_LITERAL;
+ }
 
 "//".*  // ignora comentários da forma "//"
 [ \t]   // ignora espaços em branco

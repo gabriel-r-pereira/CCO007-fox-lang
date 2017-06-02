@@ -96,10 +96,22 @@ struct flow {
     struct ast *el;     // senão (opcional) - declarações
 };
 
-/* Nó de número */
-struct numval {
-    int nodetype;       // tipo K
+/* Nó de número inteiro */
+struct intval {
+    int nodetype;       // tipo X
+    int number;         // valor numérico
+};
+
+/* Nó de ponto flutuante */
+struct floatval {
+    int nodetype;       // tipo Y
     double number;      // valor numérico
+};
+
+/* Nó de caractere */
+struct charval {
+    int nodetype;       // tipo Z
+    char c;        // valor numérico
 };
 
 /* Nó de símbolo */
@@ -128,8 +140,12 @@ struct ast *newcall(struct symbol *s, struct ast *l);
 struct ast *newref(struct symbol *s);
 /* Cia um nó de atribuição */
 struct ast *newasgn(struct symbol *s, struct ast *v);
-/* Cria um nó de número*/
-struct ast *newnum(double d);
+/* Cria um nó de número inteiro*/
+struct ast *newint(int i);
+/* Cria um nó de ponto flutuante*/
+struct ast *newfloat(double f);
+/* Cria um nó de caractere*/
+struct ast *newchar(char c);
 /* Cia um nó de estrutura de controle */
 struct ast *newflow(int nodetype, struct ast *cond, struct ast *tl, struct ast *tr);
 
