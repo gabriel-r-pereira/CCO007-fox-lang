@@ -10,6 +10,19 @@
 #include <math.h>
 #include "parser.h"
 
+static char *symboltypename(int type) {
+    switch (type) {
+        case T_int:
+            return "int";
+        case T_float:
+            return "float";
+        case T_char:
+            return "char";
+        default:
+            return "unknown";
+    }
+}
+
 static unsigned symhash(char *sym) {
     unsigned int hash = 0;
     unsigned c;
@@ -19,7 +32,7 @@ static unsigned symhash(char *sym) {
     return hash;
 }
 
-struct symbol *lookup(char *sym) {
+struct symbol *getsymbol(char *sym) {
     struct symbol *sp = &symtab[symhash(sym) % NHASH];
     int scount = NHASH;
 
@@ -28,9 +41,27 @@ struct symbol *lookup(char *sym) {
             return sp;
         }
 
+        if (++sp >= symtab + NHASH) // tenta o próximo símbolo
+            sp = symtab;
+    }
+
+    return NULL;
+}
+
+struct symbol *newsymbol(int type, char *sym) {
+    struct symbol *sp = &symtab[symhash(sym) % NHASH];
+    int scount = NHASH;
+
+    while (--scount >= 0) {
+        if (sp->name && !strcmp(sp->name, sym)) {
+            yyerror("symbol '%s' already declared.", sp->name);
+            abort();
+        }
+
         // adiciona novo símbolo
         if (!sp->name) {
             sp->name = strdup(sym);
+            sp->type = type;
             sp->value = 0;
             sp->func = NULL;
             sp->syms = NULL;
@@ -120,22 +151,8 @@ struct ast *newfunc(int functype, struct ast *l) {
     return (struct ast *)a;
 }
 
-struct ast *newcall(struct symbol *s, struct ast *l) {
-    struct ufncall *a = malloc(sizeof(struct ufncall));
-
-    if(!a) {
-        yyerror("out of space");
-        exit(0);
-    }
-    a->nodetype = 'C';
-    a->l = l;
-    a->s = s;
-    return (struct ast *)a;
-}
-
 struct ast *newref(struct symbol *s) {
     struct symref *a = malloc(sizeof(struct symref));
-
     if(!a) {
         yyerror("out of space");
         exit(0);
@@ -183,7 +200,7 @@ void treefree(struct ast *a) {
             treefree(a->r);
         /* possuem uma sub-árvore (esquerda) */
         case '|':
-        case 'M': case 'C': case 'F':
+        case 'M': case 'F':
             treefree(a->l);
         /* não possuem sub-árvores */
         case 'X': case 'Y': case 'Z': case 'N':
@@ -206,25 +223,16 @@ void treefree(struct ast *a) {
     free(a); // O próprio nó é sempre limpo
 }
 
-struct symlist *newsymlist(struct symbol *sym, struct symlist *next) {
-    struct symlist *sl = malloc(sizeof(struct symlist));
-
-    if(!sl) {
+struct idlist *newidlist(char *id, struct idlist *next) {
+    struct idlist *il = malloc(sizeof(struct idlist));
+    if(!il) {
         yyerror("out of space");
         exit(0);
     }
-    sl->sym = sym;
-    sl->next = next;
-    return sl;
-}
 
-void symlistfree(struct symlist *sl) {
-    struct symlist *nsl;
-    while(sl) {
-        nsl = sl->next;
-        free(sl);
-        sl = nsl;
-    }
+    il->id = strdup(id);
+    il->next = next;
+    return il;
 }
 
 static double callbuiltin(struct fncall *f) {
@@ -240,14 +248,27 @@ static double callbuiltin(struct fncall *f) {
         case B_print:
             switch (f->l->nodetype) {
                 case 'X':
-                    fprintf(yyout, "%d\n", ((struct intval *)f->l)->number);
+                    fprintf(yyout, "%d\n", (int)((struct intval *)f->l)->number);
                     break;
                 case 'Y':
-                    fprintf(yyout, "%f\n", ((struct floatval *)f->l)->number);
+                    fprintf(yyout, "%f\n", (double)((struct floatval *)f->l)->number);
                     break;
                 case 'Z':
-                    fprintf(yyout, "%c\n", ((struct charval *)f->l)->c);
+                    fprintf(yyout, "%c\n", (char)((struct charval *)f->l)->c);
                     break;
+                case 'N':
+                    v = ((struct symref *)f->l)->s->value;
+                    switch (((struct symref *)f->l)->s->type) {
+                        case T_int:
+                            fprintf(yyout, "%d\n", (int)v);
+                            break;
+                        case T_float:
+                            fprintf(yyout, "%f\n", v);
+                            break;
+                        case T_char:
+                            fprintf(yyout, "%c\n", (char)v);
+                            break;
+                    }
                 default:
                     break;
             }
@@ -256,74 +277,6 @@ static double callbuiltin(struct fncall *f) {
             yyerror("Unknown built-in function %d", functype);
             return 0.0;
     }
-}
-
-static double calluser(struct ufncall *f) {
-    struct symbol *fn = f->s;   // nome da função
-    struct symlist *sl;         // argumentos da função
-    struct ast *args = f->l;    // argumentos passados para a função
-    double *oldval, *newval;    // valores dos argumentos salvos
-    double v;
-    int nargs;
-    int i;
-    if(!fn->func) {
-        yyerror("call to undefined function", fn->name);
-        return 0;
-    }
-
-    /* Contagem dos argumentos */
-    sl = fn->syms;
-    for (nargs = 0; sl; sl = sl->next)
-        nargs++;
-
-    /* Prepara para salvá-los */
-    oldval = (double *)malloc(nargs * sizeof(double));
-    newval = (double *)malloc(nargs * sizeof(double));
-    if(!oldval || !newval) {
-        yyerror("Out of space in %s", fn->name);
-        return 0.0;
-    }
-
-    /* Avalia os argumentos */
-    for(i = 0; i < nargs; i++) {
-        if(!args) {
-            yyerror("too few args in call to %s", fn->name);
-            free(oldval);
-            free(newval);
-            return 0.0;
-        }
-        if(args->nodetype == 'L') { // se é um nó do tipo lista
-            newval[i] = eval(args->l);
-            args = args->r;
-        } else { // se é o fim da lista
-            newval[i] = eval(args);
-            args = NULL;
-        }
-    }
-
-    /* Salva os antigos valores dos argumentos, atribui os novos */
-    sl = fn->syms;
-    for(i = 0; i < nargs; i++) {
-        struct symbol *s = sl->sym;
-        oldval[i] = s->value;
-        s->value = newval[i];
-        sl = sl->next;
-    }
-    free(newval);
-
-    /* Avalia a função */
-    v = eval(fn->func);
-
-    /* Coloca os antigos valores de volta nos argumentos da função */
-    sl = fn->syms;
-    for(i = 0; i < nargs; i++) {
-        struct symbol *s = sl->sym;
-        s->value = oldval[i];
-        sl = sl->next;
-    }
-    free(oldval);
-
-    return v;
 }
 
 double eval(struct ast *a) {
@@ -426,24 +379,21 @@ double eval(struct ast *a) {
         case 'F':
             v = callbuiltin((struct fncall *)a);
             break;
-        case 'C':
-            v = calluser((struct ufncall *)a);
-            break;
         default:
             printf("internal error: bad node %c\n", a->nodetype);
     }
     return v;
 }
 
-/* Define uma função */
-void dodef(struct symbol *name, struct symlist *syms, struct ast *func) {
-    if(name->syms)
-        symlistfree(name->syms);
-    if(name->func)
-        treefree(name->func);
+void defvar(int type, struct idlist *syms) {
+    struct idlist *til;
+    while (syms) {
+        newsymbol(type, syms->id);
 
-    name->syms = syms;
-    name->func = func;
+        til = syms->next;
+        free(syms);
+        syms = til;
+    }
 }
 
 void yyerror(char *s, ...) {

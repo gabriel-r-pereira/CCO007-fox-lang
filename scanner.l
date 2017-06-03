@@ -34,10 +34,9 @@ EXP ([Ee][-+]?[0-9]+)
 "if"    { return IF; }
 "else"  { return ELSE; }
 "while" { return WHILE; }
-"def"   { return DEF; }
-"int"   { return INT; }
-"float" { return FLOAT; }
-"char"  { return CHAR; }
+"int"   { return INT_KEYWORD; }
+"float" { return FLOAT_KEYWORD; }
+"char"  { return CHAR_KEYWORD; }
 
  /* Funções da linguagem */
  "sqrt"     { yylval.fn = B_sqrt; return FUNC; }
@@ -47,8 +46,12 @@ EXP ([Ee][-+]?[0-9]+)
 
  /* Identificadores */
 [a-zA-Z][a-zA-Z0-9_]* {
-    yylval.s = lookup(yytext);
-    return ID;
+    if ( (yylval.s = getsymbol(yytext)) ) {
+        return VAR;
+    } else {
+        yylval.st = yytext;
+        return ID;
+    }
 }
 
  /* Números */
@@ -71,7 +74,7 @@ EXP ([Ee][-+]?[0-9]+)
 [ \t]   // ignora espaços em branco
 \n      // ignora fim de linha */
 
-.       { yyerror("Mystery character %c\n", *yytext); } // caracter não reconhecido
+.       { yyerror("Unknown character %c\n", *yytext); } // caracter não reconhecido
 
 <<EOF>> { exit(0); }    // End-Of-File, final do arquivo
 
