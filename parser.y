@@ -93,7 +93,8 @@ stmt_list: stmt  { $$ = $1; }
 assigment: VAR '=' exp                   { $$ = newasgn($1, $3); }
     ;
 /* Chamada de funções definidas pelo usuário */
-b_function: FUNC '(' explist ')'        { $$ = newfunc($1, $3); }
+b_function: FUNC '(' ')'    { $$ = newfunc($1, NULL); }
+    | FUNC '(' explist ')'  { $$ = newfunc($1, $3); }
     ;
 
 /* Expressão */

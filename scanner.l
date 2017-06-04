@@ -43,6 +43,7 @@ EXP ([Ee][-+]?[0-9]+)
  "exp"      { yylval.fn = B_exp; return FUNC; }
  "log"      { yylval.fn = B_log; return FUNC; }
  "print"    { yylval.fn = B_print; return FUNC; }
+ "scan"     { yylval.fn = B_scan; return FUNC; }
 
  /* Identificadores */
 [a-zA-Z][a-zA-Z0-9_]* {

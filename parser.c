@@ -10,19 +10,6 @@
 #include <math.h>
 #include "parser.h"
 
-static char *symboltypename(int type) {
-    switch (type) {
-        case T_int:
-            return "int";
-        case T_float:
-            return "float";
-        case T_char:
-            return "char";
-        default:
-            return "unknown";
-    }
-}
-
 static unsigned symhash(char *sym) {
     unsigned int hash = 0;
     unsigned c;
@@ -237,7 +224,13 @@ struct idlist *newidlist(char *id, struct idlist *next) {
 
 static double callbuiltin(struct fncall *f) {
     enum bifs functype = f->functype;
-    double v = eval(f->l);
+    double v;
+    int iv;
+    char cv;
+
+    if (f->l)
+        v = eval(f->l);
+
     switch(functype) {
         case B_sqrt:
             return sqrt(v);
@@ -273,6 +266,29 @@ static double callbuiltin(struct fncall *f) {
                     break;
             }
             return v;
+        case B_scan:
+            if (f->l->nodetype != 'N') {
+                yyerror("scan: expected a variable argument");
+                exit(0);
+            } else {
+                switch (((struct symref *)f->l)->s->type) {
+                    case T_int:
+                        scanf("%d\n", &iv);
+                        ((struct symref *)f->l)->s->value = iv;
+                        return iv;
+                    case T_float:
+                        scanf("%lf\n", &v);
+                        ((struct symref *)f->l)->s->value = v;
+                        return v;
+                    case T_char:
+                        scanf(" %c", &cv);
+                        ((struct symref *)f->l)->s->value = cv;
+                        return cv;
+                    default:
+                        yyerror("scan: an error occurred");
+                        exit(0);
+                }
+            }
         default:
             yyerror("Unknown built-in function %d", functype);
             return 0.0;
@@ -412,7 +428,7 @@ int main (int argc, char **argv) {
             return 1;
         }
     }
-    if (argc == 3) {
+    if (argc >= 3) {
         if (!(yyout = fopen(argv[2], "w"))) {
             perror(argv[2]);
             return 1;
