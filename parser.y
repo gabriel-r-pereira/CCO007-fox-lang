@@ -33,7 +33,7 @@
 %nonassoc <fn> LOGI // operadores lógicos
 %right '='
 %left '+' '-'
-%left '*' '/'
+%left '*' '/' '%'
 %nonassoc UMINUS
 %nonassoc NEG
 %nonassoc NO_ELSE
@@ -106,6 +106,7 @@ exp: exp CMP exp            { $$ = newcmp($2, $1, $3); }
     | exp '-' exp           { $$ = newast('-', $1, $3); }
     | exp '*' exp           { $$ = newast('*', $1, $3); }
     | exp '/' exp           { $$ = newast('/', $1, $3); }
+    | exp '%' exp           { $$ = newast('%', $1, $3); }
     | '(' exp ')'           { $$ = $2; }
     | '!' exp %prec NEG     { $$ = newast('!', $2, NULL); }
     | '-' exp %prec UMINUS  { $$ = newast('M', $2, NULL); }

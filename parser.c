@@ -195,11 +195,11 @@ void treefree(struct ast *a) {
         case '-':
         case '*':
         case '/':
+        case '%':
         case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8':
         case 'L':
             treefree(a->r);
         /* possuem uma sub-árvore (esquerda) */
-        case '|':
         case 'M': case '!': case 'F':
             treefree(a->l);
         /* não possuem sub-árvores */
@@ -383,10 +383,10 @@ void eval(struct ast *a, char *prepend) {
             fprintf(output, " / ");
             eval(a->r, "");
             break;
-        case '|':
-            fprintf(output, "fabs(");
+        case '%':
             eval(a->l, "");
-            fprintf(output, ")");
+            fprintf(output, " %% ");
+            eval(a->r, "");
             break;
         case 'M':
             fprintf(output, "-");
