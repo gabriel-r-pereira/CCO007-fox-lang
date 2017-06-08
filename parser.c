@@ -125,6 +125,19 @@ struct ast *newcmp(int cmptype, struct ast *l, struct ast *r) {
     return a;
 }
 
+struct ast *newlgi(int cmptype, struct ast *l, struct ast *r){
+	struct ast *a = malloc(sizeof(struct ast));
+
+    if(!a) {
+        yyerror("out of space");
+        exit(0);
+    }
+    a->nodetype = '0' + cmptype;
+    a->l = l;
+    a->r = r;
+    return a;
+}
+
 struct ast *newfunc(int functype, struct ast *l) {
     struct fncall *a = malloc(sizeof(struct fncall));
 
@@ -360,6 +373,15 @@ double eval(struct ast *a) {
         case '6':
             v = (eval(a->l) <= eval(a->r)) ? 1 : 0;
             break;
+        case '7':
+            v = (eval(a->l) && eval(a->r)) ? 1 : 0;
+            break;
+        case '8':
+            v = (eval(a->l) || eval(a->r)) ? 1 : 0;
+            break;
+        case '9':
+            v = (!eval(a->r)) ? 1 : 0;
+            break;    
         /* Estruturas de controle */
         /* Expressões nulas são permitidas, portanto são checadas */
         /* if/then/else */
