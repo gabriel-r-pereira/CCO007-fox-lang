@@ -17,6 +17,7 @@ EXP ([Ee][-+]?[0-9]+)
 "=" |
 "," |
 ";" |
+"!" |
 "(" |
 ")" |
 "{" |
@@ -31,9 +32,8 @@ EXP ([Ee][-+]?[0-9]+)
 "<="    { yylval.fn = 6; return CMP; }
 
  /* Operações lógicas, todos usam o token LOGI */
-"!"     { yylval.fn = 7; return LOGI; }
-"&&"    { yylval.fn = 8; return LOGI; }
-"||"    { yylval.fn = 9; return LOGI; }
+"&&"    { yylval.fn = 7; return LOGI; }
+"||"    { yylval.fn = 8; return LOGI; }
 
 
  /* Palavras reservadas */
@@ -83,6 +83,10 @@ EXP ([Ee][-+]?[0-9]+)
 
 .       { yyerror("Unknown character %c\n", *yytext); } // caracter não reconhecido
 
-<<EOF>> { exit(0); }    // End-Of-File, final do arquivo
+ /* End-Of-File, final do arquivo */
+<<EOF>> {
+        closeoutputfile();
+        exit(0);
+    }
 
 %%

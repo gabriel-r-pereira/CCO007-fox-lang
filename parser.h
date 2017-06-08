@@ -8,6 +8,7 @@ extern int yylex();         // executa o scanner
 extern int yyparse();       // executa o parser
 extern FILE *yyin;          // entrada (padrão - stdin)
 extern FILE *yyout;         // saída (padrão - stdout)
+FILE *output;
 void yyerror(char *s, ...); // método padrão de notificação de erros
 
 /* Funções da linguagem */
@@ -53,8 +54,9 @@ void idlistfree(struct idlist *il);
 /*
  * Opções para nodetype
  * + - * /
- * 0-7  operações de comparação
- * 8-9  operações lógicas
+ * 1-6  operações de comparação
+ * 7-8  operações lógicas
+ * !    Negação
  * M    menos unário
  * L    expressão ou lista de declarações (statements)
  * I    IF
@@ -80,12 +82,10 @@ enum bifs {
  */
  /* Nó usado para expressões e comparação */
 struct ast {
-    int nodetype;       // tipo L ou 0-9
+    int nodetype;       // tipo L ou 1-8
     struct ast *l;      // nó da esquerda
     struct ast *r;      // nó da direita
 };
- /* Nó usado para o operador lógico '!' */
-
 
 /* Nó de função da linguagem */
 struct fncall {
@@ -139,7 +139,7 @@ struct ast *newast(int nodetype, struct ast *l, struct ast *r);
 /* Cria um nó de comparação */
 struct ast *newcmp(int cmptype, struct ast *l, struct ast *r);
 /* Cria um nó operação lógica */
-struct ast *newlgi(int cmptype, struct ast *l, struct ast *r);
+struct ast *newlgi(int logtype, struct ast *l, struct ast *r);
 /* Cria um nó de função da linguagem */
 struct ast *newfunc(int functype, struct ast *l);
 /* Cria um nó de símbolo */
@@ -156,9 +156,11 @@ struct ast *newchar(char c);
 struct ast *newflow(int nodetype, struct ast *cond, struct ast *tl, struct ast *tr);
 
 /* Define uma variável */
-void defvar(int type, struct idlist *syms);
+void defvar(int type, struct idlist *syms, char *prepend);
 
 /* Avalia a expressão representada por uma AST */
-double eval(struct ast *);
+void eval(struct ast *, char *prepend);
 /* Limpa uma AST */
 void treefree(struct ast *);
+
+void closeoutputfile();

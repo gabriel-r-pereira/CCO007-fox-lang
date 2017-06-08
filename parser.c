@@ -125,14 +125,14 @@ struct ast *newcmp(int cmptype, struct ast *l, struct ast *r) {
     return a;
 }
 
-struct ast *newlgi(int cmptype, struct ast *l, struct ast *r){
+struct ast *newlgi(int logtype, struct ast *l, struct ast *r){
 	struct ast *a = malloc(sizeof(struct ast));
 
     if(!a) {
         yyerror("out of space");
         exit(0);
     }
-    a->nodetype = '0' + cmptype;
+    a->nodetype = '0' + logtype;
     a->l = l;
     a->r = r;
     return a;
@@ -195,22 +195,22 @@ void treefree(struct ast *a) {
         case '-':
         case '*':
         case '/':
-        case '1': case '2': case '3': case '4': case '5': case '6':
+        case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8':
         case 'L':
             treefree(a->r);
         /* possuem uma sub-árvore (esquerda) */
         case '|':
-        case 'M': case 'F':
+        case 'M': case '!': case 'F':
             treefree(a->l);
         /* não possuem sub-árvores */
         case 'X': case 'Y': case 'Z': case 'N':
             break;
         case '=':
-            free(((struct symasgn *)a)->v);
+            treefree(((struct symasgn *)a)->v);
             break;
         /* possuem até três subárvores */
         case 'I': case 'W':
-            free( ((struct flow *)a)->cond);
+            treefree( ((struct flow *)a)->cond);
             if(((struct flow *)a)->tl)
                 treefree(((struct flow *)a)->tl);
             if(((struct flow *)a)->el)
@@ -235,50 +235,70 @@ struct idlist *newidlist(char *id, struct idlist *next) {
     return il;
 }
 
-static double callbuiltin(struct fncall *f) {
+static void callbuiltin(struct fncall *f, char *prepend) {
     enum bifs functype = f->functype;
-    double v;
-    int iv;
-    char cv;
 
-    if (f->l)
-        v = eval(f->l);
-
+    fprintf(output, "%s", prepend);
     switch(functype) {
         case B_sqrt:
-            return sqrt(v);
+            fprintf(output, "sqrt(");
+            eval(f->l, "");
+            fprintf(output, ");\n");
+            break;
         case B_exp:
-            return exp(v);
+            fprintf(output, "exp(");
+            eval(f->l, "");
+            fprintf(output, ");\n");
+            break;
         case B_log:
-            return log(v);
+            fprintf(output, "log(");
+            eval(f->l, "");
+            fprintf(output, ");\n");
+            break;
         case B_print:
             switch (f->l->nodetype) {
                 case 'X':
-                    fprintf(yyout, "%d\n", (int)((struct intval *)f->l)->number);
+                    fprintf(output, "printf(\"%%d\\n\", ");
+                    eval(f->l, "");
+                    fprintf(output, ");\n");
                     break;
                 case 'Y':
-                    fprintf(yyout, "%f\n", (double)((struct floatval *)f->l)->number);
+                    fprintf(output, "printf(\"%%lf\\n\", ");
+                    eval(f->l, "");
+                    fprintf(output, ");\n");
                     break;
                 case 'Z':
-                    fprintf(yyout, "%c\n", (char)((struct charval *)f->l)->c);
+                    fprintf(output, "printf(\"%%c\\n\", '");
+                    eval(f->l, "");
+                    fprintf(output, "');\n");
                     break;
                 case 'N':
-                    v = ((struct symref *)f->l)->s->value;
                     switch (((struct symref *)f->l)->s->type) {
                         case T_int:
-                            fprintf(yyout, "%d\n", (int)v);
+                            fprintf(output, "printf(\"%%d\\n\", ");
+                            eval(f->l, "");
+                            fprintf(output, ");\n");
                             break;
                         case T_float:
-                            fprintf(yyout, "%f\n", v);
+                            fprintf(output, "printf(\"%%lf\\n\", ");
+                            eval(f->l, "");
+                            fprintf(output, ");\n");
                             break;
                         case T_char:
-                            fprintf(yyout, "%c\n", (char)v);
+                            fprintf(output, "printf(\"%%c\\n\", ");
+                            eval(f->l, "");
+                            fprintf(output, ");\n");
                             break;
+                        default:
+                            yyerror("scan: argument 1 has invalid type");
+                            exit(0);
                     }
-                default:
                     break;
+                default:
+                    yyerror("print: invalid argument 1");
+                    exit(0);
             }
-            return v;
+            break;
         case B_scan:
             if (f->l->nodetype != 'N') {
                 yyerror("scan: expected a variable argument");
@@ -286,152 +306,232 @@ static double callbuiltin(struct fncall *f) {
             } else {
                 switch (((struct symref *)f->l)->s->type) {
                     case T_int:
-                        scanf("%d\n", &iv);
-                        ((struct symref *)f->l)->s->value = iv;
-                        return iv;
+                        fprintf(output, "scanf(\"%%d\", &");
+                        eval(f->l, "");
+                        fprintf(output, ");\n");
+                        break;
                     case T_float:
-                        scanf("%lf\n", &v);
-                        ((struct symref *)f->l)->s->value = v;
-                        return v;
+                        fprintf(output, "scanf(\"%%lf\", &");
+                        eval(f->l, "");
+                        fprintf(output, ");\n");
+                        break;
                     case T_char:
-                        scanf(" %c", &cv);
-                        ((struct symref *)f->l)->s->value = cv;
-                        return cv;
+                        fprintf(output, "scanf(\" %%c\", &");
+                        eval(f->l, "");
+                        fprintf(output, ");\n");
+                        break;
                     default:
-                        yyerror("scan: an error occurred");
+                        yyerror("scan: argument 1 has invalid type");
                         exit(0);
                 }
             }
+            break;
         default:
             yyerror("Unknown built-in function %d", functype);
-            return 0.0;
     }
 }
 
-double eval(struct ast *a) {
-    double v;
+void eval(struct ast *a, char *prepend) {
+    char *addprep;
     if(!a) {
         yyerror("internal error, null eval");
-        return 0.0;
     }
+    if (a->nodetype != 'L')
+        fprintf(output, "%s", prepend);
     switch(a->nodetype) {
         /* Número inteiro */
         case 'X':
-            v = ((struct intval *)a)->number;
+            fprintf(output, "%d", ((struct intval *)a)->number);
             break;
         /* ponto flutuante */
         case 'Y':
-            v = ((struct floatval *)a)->number;
+            fprintf(output, "%lf", ((struct floatval *)a)->number);
             break;
         /* Constante */
         case 'Z':
-            v = ((struct charval *)a)->c;
+            fprintf(output, "%c", ((struct charval *)a)->c);
             break;
         /* Identificador */
         case 'N':
-            v = ((struct symref *)a)->s->value;
+            fprintf(output, "%s", ((struct symref *)a)->s->name);
             break;
         /* Atribuição */
         case '=':
-            v = ((struct symasgn *)a)->s->value = eval(((struct symasgn *)a)->v);
+            fprintf(output, "%s = ", ((struct symasgn *)a)->s->name);
+            eval(((struct symasgn *)a)->v, "");
+            fprintf(output, ";\n");
             break;
         /* Expressões */
         case '+':
-            v = eval(a->l) + eval(a->r);
+            fprintf(output, " + ");
+            eval(a->l, "");
+            fprintf(output, " + ");
+            eval(a->r, "");
             break;
         case '-':
-            v = eval(a->l) - eval(a->r);
+            eval(a->l, "");
+            fprintf(output, " - ");
+            eval(a->r, "");
             break;
         case '*':
-            v = eval(a->l) * eval(a->r);
+            eval(a->l, "");
+            fprintf(output, " * ");
+            eval(a->r, "");
             break;
         case '/':
-            v = eval(a->l) / eval(a->r);
+            eval(a->l, "");
+            fprintf(output, " / ");
+            eval(a->r, "");
             break;
         case '|':
-            v = fabs(eval(a->l));
+            fprintf(output, "fabs(");
+            eval(a->l, "");
+            fprintf(output, ")");
             break;
         case 'M':
-            v = -eval(a->l);
+            fprintf(output, "-");
+            eval(a->l, "");
+            break;
+        case '!':
+            fprintf(output, "!");
+            eval(a->l, "");
             break;
         /* Comparações */
         case '1':
-            v = (eval(a->l) >  eval(a->r)) ? 1 : 0;
+            eval(a->l, "");
+            fprintf(output, " > ");
+            eval(a->r, "");
             break;
         case '2':
-            v = (eval(a->l) <  eval(a->r)) ? 1 : 0;
+            eval(a->l, "");
+            fprintf(output, " < ");
+            eval(a->r, "");
             break;
         case '3':
-            v = (eval(a->l) != eval(a->r)) ? 1 : 0;
+            eval(a->l, "");
+            fprintf(output, " != ");
+            eval(a->r, "");
             break;
         case '4':
-            v = (eval(a->l) == eval(a->r)) ? 1 : 0;
+            eval(a->l, "");
+            fprintf(output, " == ");
+            eval(a->r, "");
             break;
         case '5':
-            v = (eval(a->l) >= eval(a->r)) ? 1 : 0;
+            eval(a->l, "");
+            fprintf(output, " >= ");
+            eval(a->r, "");
             break;
         case '6':
-            v = (eval(a->l) <= eval(a->r)) ? 1 : 0;
+            eval(a->l, "");
+            fprintf(output, " <= ");
+            eval(a->r, "");
             break;
         case '7':
-            v = (eval(a->l) && eval(a->r)) ? 1 : 0;
+            eval(a->l, "");
+            fprintf(output, " && ");
+            eval(a->r, "");
             break;
         case '8':
-            v = (eval(a->l) || eval(a->r)) ? 1 : 0;
+            eval(a->l, "");
+            fprintf(output, " || ");
+            eval(a->r, "");
             break;
-        case '9':
-            v = (!eval(a->r)) ? 1 : 0;
-            break;    
         /* Estruturas de controle */
         /* Expressões nulas são permitidas, portanto são checadas */
         /* if/then/else */
         case 'I':
-            if(eval(((struct flow *)a)->cond) != 0) {
-                if(((struct flow *)a)->tl) {
-                    v = eval(((struct flow *)a)->tl);
-                } else {
-                    v = 0.0; // valor padrão
-                }
-            } else {
-                if(((struct flow *)a)->el) {
-                    v = eval(((struct flow *)a)->el);
-                } else {
-                    v = 0.0; // valor padrão
-                }
+            fprintf(output, "\n%s", prepend);
+            fprintf (output, "if (");
+            eval(((struct flow *)a)->cond, "");
+            fprintf(output, ") {\n");
+
+            if(((struct flow *)a)->tl) {
+                addprep = strdup(prepend);
+                strcat(addprep, "\t");
+
+                eval(((struct flow *)a)->tl, addprep);
+            }
+
+            fprintf(output, "%s", prepend);
+            fprintf(output, "}");
+
+            if(((struct flow *)a)->el) {
+                addprep = strdup(prepend);
+                strcat(addprep, "\t");
+
+                fprintf (output, " else {\n");
+                eval(((struct flow *)a)->el, addprep);
+
+                fprintf(output, "%s", prepend);
+                fprintf(output, "}\n");
             }
             break;
         case 'W':
-            v = 0.0;  // valor padrão
+            fprintf(output, "\n%s", prepend);
+            fprintf(output, "while (");
+            eval(((struct flow *)a)->cond, prepend);
+            fprintf(output, ") {\n");
 
             if(((struct flow *)a)->tl) {
-                while(eval(((struct flow *)a)->cond) != 0)
-                v = eval(((struct flow *)a)->tl);
-            }
-            break; // o valor da última declaração é o valor do while/do
+                addprep = strdup(prepend);
+                strcat(addprep, "\t");
 
-        /* Lista de argumentos */
+                eval(((struct flow *)a)->tl, addprep);
+            }
+
+            fprintf(output, "%s", prepend);
+            fprintf(output, "}\n\n");
+            break;
+
+        /* Lista de declarações */
         case 'L':
-            eval(a->l);
-            v = eval(a->r);
+            eval(a->l, prepend);
+            eval(a->r, prepend);
             break;
         case 'F':
-            v = callbuiltin((struct fncall *)a);
+            callbuiltin((struct fncall *)a, "");
             break;
         default:
             printf("internal error: bad node %c\n", a->nodetype);
     }
-    return v;
 }
 
-void defvar(int type, struct idlist *syms) {
+void defvar(int type, struct idlist *syms, char *prepend) {
     struct idlist *til;
+
+    fprintf(output, "%s", prepend);
+    switch (type) {
+        case T_int:
+            fprintf(output, "int ");
+            break;
+        case T_float:
+            fprintf(output, "double ");
+            break;
+        case T_char:
+            fprintf(output, "char ");
+            break;
+    }
+
     while (syms) {
         newsymbol(type, syms->id);
-
         til = syms->next;
+
+        if (til) {
+            fprintf(output, "%s, ", syms->id);
+        } else {
+            fprintf(output, "%s;\n", syms->id);
+        }
+
         free(syms);
         syms = til;
     }
+}
+
+void closeoutputfile() {
+    fprintf(output, "\n\treturn 0;");
+    fprintf(output, "\n}\n");
+    fclose(output);
 }
 
 void yyerror(char *s, ...) {
@@ -449,13 +549,19 @@ int main (int argc, char **argv) {
             perror(argv[1]);
             return 1;
         }
+    } else {
+        printf("error: input file not provided\n");
+        exit(0);
     }
-    if (argc >= 3) {
-        if (!(yyout = fopen(argv[2], "w"))) {
-            perror(argv[2]);
-            return 1;
-        }
+    if (!(output = fopen("out.c", "w"))) {
+        perror("out.c");
+        return 1;
     }
+
+    fprintf(output, "#include <stdio.h>\n");
+    fprintf(output, "#include <math.h>\n");
+    fprintf(output, "#include <stdlib.h>\n\n");
+    fprintf(output, "int main(int argc, char **argv) {\n");
 
     return yyparse();
 }

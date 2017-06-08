@@ -4,3 +4,5 @@ parser.tab.c
 parser.tab.h
 scanner.lex.c
 test.fox
+out.c
+exec

@@ -35,6 +35,7 @@
 %left '+' '-'
 %left '*' '/'
 %nonassoc UMINUS
+%nonassoc NEG
 %nonassoc NO_ELSE
 %nonassoc ELSE
 
@@ -91,7 +92,7 @@ stmt_list: stmt  { $$ = $1; }
     ;
 
 /* Atribuição de variáveis */
-assigment: VAR '=' exp                   { $$ = newasgn($1, $3); }
+assigment: VAR '=' exp      { $$ = newasgn($1, $3); }
     ;
 /* Chamada de funções definidas pelo usuário */
 b_function: FUNC '(' ')'    { $$ = newfunc($1, NULL); }
@@ -99,14 +100,14 @@ b_function: FUNC '(' ')'    { $$ = newfunc($1, NULL); }
     ;
 
 /* Expressão */
-exp: exp CMP exp            { $$ = newcmp( $2, $1, $3); } 
+exp: exp CMP exp            { $$ = newcmp($2, $1, $3); }
+    | exp LOGI exp          { $$ = newlgi($2, $1, $3); }
     | exp '+' exp           { $$ = newast('+', $1, $3); }
     | exp '-' exp           { $$ = newast('-', $1, $3); }
     | exp '*' exp           { $$ = newast('*', $1, $3); }
     | exp '/' exp           { $$ = newast('/', $1, $3); }
-    | exp LOGI exp          { $$ = newlgi($2 , $1, $3); }
-    | LOGI exp              { $$ = newlgi($1 ,NULL,$2);}
     | '(' exp ')'           { $$ = $2; }
+    | '!' exp %prec NEG     { $$ = newast('!', $2, NULL); }
     | '-' exp %prec UMINUS  { $$ = newast('M', $2, NULL); }
     | INT_LITERAL           { $$ = newint($1); }
     | FLOAT_LITERAL         { $$ = newfloat($1); }
@@ -135,13 +136,13 @@ idlist: ID              { $$ = newidlist($1, NULL); }
 /* Código */
 code: var_def
     | stmt {
-        eval($1);
+        eval($1, "\t");
         treefree($1);
     }
     ;
 
 /* Declaração de variáveis */
-var_def: var_type idlist ';'    { defvar($1, $2); }
+var_def: var_type idlist ';'    { defvar($1, $2, "\t"); }
    ;
 
 /* Linhas da entrada */
