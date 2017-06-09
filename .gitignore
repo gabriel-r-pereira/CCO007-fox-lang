@@ -5,4 +5,5 @@ parser.tab.h
 scanner.lex.c
 test.fox
 out.c
+commands.txt
 exec

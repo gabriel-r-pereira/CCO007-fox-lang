@@ -86,7 +86,7 @@ EXP ([Ee][-+]?[0-9]+)
 
  /* End-Of-File, final do arquivo */
 <<EOF>> {
-        closeoutputfile();
+        closeoutputfiles();
         exit(0);
     }
 

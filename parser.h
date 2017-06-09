@@ -9,6 +9,7 @@ extern int yyparse();       // executa o parser
 extern FILE *yyin;          // entrada (padrão - stdin)
 extern FILE *yyout;         // saída (padrão - stdout)
 FILE *output;
+FILE *commands;
 void yyerror(char *s, ...); // método padrão de notificação de erros
 
 /* Funções da linguagem */
@@ -163,4 +164,4 @@ void eval(struct ast *, char *prepend);
 /* Limpa uma AST */
 void treefree(struct ast *);
 
-void closeoutputfile();
+void closeoutputfiles();
