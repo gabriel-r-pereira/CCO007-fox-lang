@@ -151,6 +151,7 @@ lines: code         // única declaração
     | lines code    // múltiplas declarações
     | lines error { // erro no reconhecimento da linguagem
         yyerrok;
+        exit(0);
     }
     ;
 %%

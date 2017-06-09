@@ -239,6 +239,7 @@ static void callbuiltin(struct fncall *f, char *prepend) {
     enum bifs functype = f->functype;
 
     fprintf(output, "%s", prepend);
+    fprintf(commands, "%11s | %s\n", "FUNC", "CHAMADA DE FUNÇÃO");
     switch(functype) {
         case B_sqrt:
             fprintf(output, "sqrt(");
@@ -343,40 +344,29 @@ void eval(struct ast *a, char *prepend) {
         /* Número inteiro */
         case 'X':
             fprintf(output, "%d", ((struct intval *)a)->number);
-            fprintf(commands, "%5d:\tINT LITERAL\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "INT_LITERAL", "NÚMERO INTEIRO");
             break;
         /* ponto flutuante */
         case 'Y':
             fprintf(output, "%lf", ((struct floatval *)a)->number);
-            fprintf(commands, "%5d:\tFLOAT LITERAL\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "FLOAT_LITERAL", "PONTO FLUTUANTE");
             break;
         /* char */
         case 'Z':
             fprintf(output, "%c", ((struct charval *)a)->c);
-            fprintf(commands, "%5d:\tCHAR LITERAL\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "CHAR_LITERAL", "CARACTER");
             break;
         /* Identificador */
         case 'N':
             fprintf(output, "%s", ((struct symref *)a)->s->name);
-            switch (((struct symref *)a)->s->type) {
-                case T_int:
-                    fprintf(commands, "%5d:\tINT", yylineno);
-                    break;
-                case T_float:
-                    fprintf(commands, "%5d:\tFLOAT", yylineno);
-                    break;
-                case T_char:
-                    fprintf(commands, "%5d:\tCHAR", yylineno);
-                    break;
-            }
-            fprintf(commands, " PALAVRA RESERVADA\n");
+            fprintf(commands, "%11s | %s\n", "VAR", "VARIÁVEL");
             break;
         /* Atribuição */
         case '=':
             fprintf(output, "%s = ", ((struct symasgn *)a)->s->name);
             eval(((struct symasgn *)a)->v, "");
             fprintf(output, ";\n");
-            fprintf(commands, "%5d:\tOPERADOR DE ATRIBUIÇÃO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "=", "OPERADOR DE ATRIBUIÇÃO");
             break;
         /* Expressões */
         case '+':
@@ -384,90 +374,90 @@ void eval(struct ast *a, char *prepend) {
             eval(a->l, "");
             fprintf(output, " + ");
             eval(a->r, "");
-            fprintf(commands, "%5d:\tOPERADOR DE SOMA\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "+", "OPERADOR DE SOMA");
             break;
         case '-':
             eval(a->l, "");
             fprintf(output, " - ");
             eval(a->r, "");
-            fprintf(commands, "%5d:\tOPERADOR DE SUBTRAÇÃO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "-", "OPERADOR DE SUBTRAÇÃO");
             break;
         case '*':
             eval(a->l, "");
             fprintf(output, " * ");
             eval(a->r, "");
-            fprintf(commands, "%5d:\tOPERADOR DE MULTIPLICAÇÃO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "*", "OPERADOR DE MULTIPLICAÇÃO");
             break;
         case '/':
             eval(a->l, "");
             fprintf(output, " / ");
             eval(a->r, "");
-            fprintf(commands, "%5d:\tOPERADOR DE DIVISÃO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "/", "OPERADOR DE DIVISÃO");
             break;
         case '%':
             eval(a->l, "");
             fprintf(output, " %% ");
             eval(a->r, "");
-            fprintf(commands, "%5d:\tOPERADOR MOD\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "%%", "OPERADOR MOD");
             break;
         case 'M':
             fprintf(output, "-");
             eval(a->l, "");
-            fprintf(commands, "%5d:\tMENOS UNÁRIO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "-", "MENOS UNÁRIO");
             break;
         case '!':
             fprintf(output, "!");
             eval(a->l, "");
-            fprintf(commands, "%5d:\tOPERADOR DE NEGAÇÃO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "!", "OPERADOR DE NEGAÇÃO");
             break;
         /* Comparações */
         case '1':
             eval(a->l, "");
             fprintf(output, " > ");
             eval(a->r, "");
-            fprintf(commands, "%5d:\tOPERADOR MAIOR COMPARAÇÃO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "CMP", "OPERADOR MAIOR COMPARAÇÃO");
             break;
         case '2':
             eval(a->l, "");
             fprintf(output, " < ");
             eval(a->r, "");
-            fprintf(commands, "%5d:\tOPERADOR MENOR COMPARAÇÃO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "CMP", "OPERADOR MENOR COMPARAÇÃO");
             break;
         case '3':
             eval(a->l, "");
             fprintf(output, " != ");
             eval(a->r, "");
-            fprintf(commands, "%5d:\tOPERADOR DIFERENTE COMPARAÇÃO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "CMP", "OPERADOR DIFERENTE COMPARAÇÃO");
             break;
         case '4':
             eval(a->l, "");
             fprintf(output, " == ");
             eval(a->r, "");
-            fprintf(commands, "%5d:\tOPERADOR IGUAL COMPARAÇÃO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "CMP", "OPERADOR IGUAL COMPARAÇÃO");
             break;
         case '5':
             eval(a->l, "");
             fprintf(output, " >= ");
             eval(a->r, "");
-            fprintf(commands, "%5d:\tOPERADOR MAIOR IGUAL COMPARAÇÃO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "CMP", "OPERADOR MAIOR IGUAL COMPARAÇÃO");
             break;
         case '6':
             eval(a->l, "");
             fprintf(output, " <= ");
             eval(a->r, "");
-            fprintf(commands, "%5d:\tOPERADOR MENOR IGUAL COMPARAÇÃO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "CMP", "OPERADOR MENOR IGUAL COMPARAÇÃO");
             break;
         case '7':
             eval(a->l, "");
             fprintf(output, " && ");
             eval(a->r, "");
-            fprintf(commands, "%5d:\tOPERADOR E LÓGICO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "LOGI", "OPERADOR E LÓGICO");
             break;
         case '8':
             eval(a->l, "");
             fprintf(output, " || ");
             eval(a->r, "");
-            fprintf(commands, "%5d:\tOPERADOR OU LÓGICO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "LOGI", "OPERADOR OU LÓGICO");
             break;
         /* Estruturas de controle */
         /* Expressões nulas são permitidas, portanto são checadas */
@@ -498,7 +488,7 @@ void eval(struct ast *a, char *prepend) {
                 fprintf(output, "%s", prepend);
                 fprintf(output, "}\n");
             }
-            fprintf(commands, "%5d:\tCOMANDO CONDICIONAL\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "IF", "COMANDO CONDICIONAL");
             break;
         case 'W':
             fprintf(output, "\n%s", prepend);
@@ -515,7 +505,7 @@ void eval(struct ast *a, char *prepend) {
 
             fprintf(output, "%s", prepend);
             fprintf(output, "}\n\n");
-            fprintf(commands, "%5d:\tCOMANDO DE REPETIÇÃO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "WHILE", "COMANDO DE REPETIÇÃO");
             break;
         /* Lista de declarações */
         case 'L':
@@ -524,7 +514,7 @@ void eval(struct ast *a, char *prepend) {
             break;
         case 'F':
             callbuiltin((struct fncall *)a, "");
-            fprintf(commands, "%5d:\tCHAMADA DE FUNÇÃO\n", yylineno);
+            fprintf(commands, "%11s | %s\n", "FUNC", "CHAMADA DE FUNÇÃO");
             break;
         default:
             printf("internal error: bad node %c\n", a->nodetype);
@@ -538,16 +528,21 @@ void defvar(int type, struct idlist *syms, char *prepend) {
     switch (type) {
         case T_int:
             fprintf(output, "int ");
+            fprintf(commands, "%11s", "INT_KEYWORD");
             break;
         case T_float:
             fprintf(output, "double ");
+            fprintf(commands, "%11s", "FLOAT_KEYWORD");
             break;
         case T_char:
             fprintf(output, "char ");
+            fprintf(commands, "%11s", "CHAR_KEYWORD");
             break;
     }
+    fprintf(commands, " | %s\n", "DECLARAÇÃO DE VARIÁVEIS");
 
     while (syms) {
+        fprintf(commands, "%11s | %s\n", "ID", "IDENTIFICADOR");
         newsymbol(type, syms->id);
         til = syms->next;
 
@@ -560,7 +555,7 @@ void defvar(int type, struct idlist *syms, char *prepend) {
         free(syms);
         syms = til;
     }
-    fprintf(commands, "%5d:\tDECLARAÇÃO DE VARIAVEIS\n", yylineno);
+    //fprintf(commands, "%11s | %s\n", "=", "DECLARAÇÃO DE VARIAVEIS");
 }
 
 void closeoutputfiles() {
@@ -604,7 +599,8 @@ int main (int argc, char **argv) {
     fprintf(output, "#include <stdlib.h>\n\n");
     fprintf(output, "int main(int argc, char **argv) {\n");
 
-    fprintf(commands, "LINHA\tSÍMBOLO\n");
+    fprintf(commands, "%11s | %s\n", "TOKEN", "COMANDO");
+    fprintf(commands, "%11s | %s\n", "----------", "------------------------------");
 
     return yyparse();
 }
