@@ -86,8 +86,8 @@ while_stmt: WHILE exp stmt {                // while, única declaração
 
 /* Lista de declarações */
 stmt_list: stmt  { $$ = $1; }
-    | stmt_list stmt {
-        $$ = newast('L', $2, $1);
+    |  stmt stmt_list {
+        $$ = newast('L', $1, $2);
     }
     ;
 
