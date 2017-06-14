@@ -29,9 +29,9 @@
 %token WHILE                // while
 
 /* Precedência dos operadores */
-%nonassoc <fn> CMP  // comparadores
-%nonassoc <fn> LOGI // operadores lógicos
 %right '='
+%left <fn> LOGI // operadores lógicos
+%left <fn> CMP  // comparadores
 %left '+' '-'
 %left '*' '/' '%'
 %nonassoc UMINUS
